@@ -1,3 +1,3 @@
-# Project Name
+# Bedrock Lab Provision
 
-A new project initialized by repo-init.
+Lab environment provisioning for the "Building Production-Ready Agents with Amazon Bedrock AgentCore" course.
