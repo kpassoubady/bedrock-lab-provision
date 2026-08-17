@@ -1,0 +1,16 @@
+/* White casing (halo) around Mermaid connector lines and arrowheads so edges
+   stay visible on dark (night-mode) backgrounds while staying crisp on light
+   (day) pages. Used by build-diagrams.sh for PNG output (-C flag). The SVG
+   output gets an equivalent vector casing via add-edge-casing.py. */
+.edgePaths .path,
+path.flowchart-link,
+.flowchart-link,
+.edgePath .path,
+.marker,
+marker path,
+.arrowheadPath,
+defs marker path {
+  filter:
+    drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 1.5px #fff)
+    drop-shadow(0 0 1.5px #fff);
+}

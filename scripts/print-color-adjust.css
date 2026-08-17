@@ -1,0 +1,13 @@
+/* Chromium's PDF export defaults to a print-economy color adjustment, which
+   dims explicit white text (e.g. `color:#fff` node labels) to a light gray so
+   it stays legible on paper. Since build-diagrams.sh renders SVGs via a PDF
+   intermediate (mmdc -> PDF -> pdf2svg, for vector connector lines), that
+   adjustment silently darkens white node label text in the final SVG even
+   though the PNG output (rendered directly, no PDF step) looks correct.
+   Forcing exact color rendering here keeps SVG text colors matching the
+   PNG/on-screen colors. Used by build-diagrams.sh for the SVG PDF step
+   (-C flag). */
+* {
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
