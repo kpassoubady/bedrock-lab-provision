@@ -3,6 +3,17 @@ This project provides lab environment provisioning for "Building Production-Read
 
 ## Directory Layout
 - `llm-context/`: Stores context for LLM agents.
+- `env/`: Output directory for generated environment files and manifests. Tracked files: `agentcore-inline-policy.json`. Runtime artifacts (`*.env`, `*.csv`, `*manifest*.json`) are ignored.
+- `provision-instructor.py`: Provisions the instructor demo sandbox.
+- `provision-students.py`: Provisions per-team student sandboxes.
+- `validate-instructor.py`: Validates provisioned instructor resources.
+- `teardown.py`: Tears down all resources using manifest files.
+- `instructor-provision.sh`: Shell script to install dependencies and provision the instructor environment.
+- `provisioning-instructor.md`: Full specification for the instructor environment.
+- `provisioning-student.md`: Full specification for student sandboxes.
+- `permission-request-agentcore.md`: Template for requesting the AgentCore inline policy.
+- `pm-provisioning-request.md`: Provisioning request for project management.
+- `requirements.txt`: Python dependencies.
 
 ## Verification Steps
 TBD

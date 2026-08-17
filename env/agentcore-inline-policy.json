@@ -1,0 +1,35 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "bedrock-agentcore:CreateAgentRuntime",
+        "bedrock-agentcore:UpdateAgentRuntime",
+        "bedrock-agentcore:DeleteAgentRuntime",
+        "bedrock-agentcore:GetAgentRuntime",
+        "bedrock-agentcore:ListAgentRuntimes",
+        "bedrock-agentcore:InvokeAgentRuntime",
+        "bedrock-agentcore:InvokeAgentRuntimeForUser",
+        "bedrock-agentcore:CreateGateway",
+        "bedrock-agentcore:DeleteGateway",
+        "bedrock-agentcore:GetGateway",
+        "bedrock-agentcore:ListGateways",
+        "bedrock-agentcore:InvokeGateway",
+        "bedrock-agentcore:CreateMemory",
+        "bedrock-agentcore:DeleteMemory",
+        "bedrock-agentcore:GetMemory",
+        "bedrock-agentcore:ListMemories",
+        "bedrock-agentcore:CreateEvent",
+        "bedrock-agentcore:GetEvent",
+        "bedrock-agentcore:ListEvents"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["sts:AssumeRole"],
+      "Resource": "arn:aws:iam::*:role/LabAgent-*"
+    }
+  ]
+}
