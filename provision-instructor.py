@@ -174,6 +174,14 @@ def execution_permissions_policy(
                 "Resource": f"arn:aws:bedrock:{region}::foundation-model/*",
             },
             {
+                # Bearer-token auth path (Bedrock API keys / OpenAI-compatible
+                # endpoint, AWS_BEARER_TOKEN_BEDROCK). Gates bearer-token calls
+                # independently of the InvokeModel grant above; no resource scoping.
+                "Effect": "Allow",
+                "Action": "bedrock:CallWithBearerToken",
+                "Resource": "*",
+            },
+            {
                 "Effect": "Allow",
                 "Action": ["bedrock-agentcore:InvokeGateway"],
                 "Resource": gateway_arn,
