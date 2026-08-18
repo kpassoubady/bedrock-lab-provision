@@ -41,53 +41,10 @@ Create one IAM user per student or team. Attach only the scoped policy below —
     {
       "Effect": "Allow",
       "Action": [
-        "bedrock:InvokeModel",
-        "bedrock:InvokeModelWithResponseStream"
+        "bedrock:*",
+        "bedrock-agentcore:*"
       ],
-      "Resource": [
-        "arn:aws:bedrock:*::foundation-model/amazon.nova-lite*",
-        "arn:aws:bedrock:*::foundation-model/amazon.nova-micro*",
-        "arn:aws:bedrock:*::foundation-model/anthropic.claude*haiku*",
-        "arn:aws:bedrock:*::foundation-model/meta.llama*-8b-*",
-        "arn:aws:bedrock:*::foundation-model/mistral.mistral-7b-*",
-        "arn:aws:bedrock:*::foundation-model/mistral.mixtral-8x7b-*",
-        "arn:aws:bedrock:*::foundation-model/openai.gpt-oss*",
-        "arn:aws:bedrock:*:<account-id>:inference-profile/*nova-lite*",
-        "arn:aws:bedrock:*:<account-id>:inference-profile/*nova-micro*",
-        "arn:aws:bedrock:*:<account-id>:inference-profile/*claude*haiku*",
-        "arn:aws:bedrock:*:<account-id>:inference-profile/*gpt-oss*"
-      ]
-    },
-    {
-      "Effect": "Allow",
-      "Action": "bedrock:CallWithBearerToken",
       "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "bedrock-agentcore:CreateAgentRuntime",
-        "bedrock-agentcore:UpdateAgentRuntime",
-        "bedrock-agentcore:GetAgentRuntime",
-        "bedrock-agentcore:InvokeAgentRuntime"
-      ],
-      "Resource": "arn:aws:bedrock-agentcore:us-east-1:<account-id>:runtime/*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "bedrock-agentcore:InvokeGateway"
-      ],
-      "Resource": "arn:aws:bedrock-agentcore:us-east-1:<account-id>:gateway/LabAgent-TeamXX-Gateway"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "bedrock-agentcore:CreateEvent",
-        "bedrock-agentcore:GetEvent",
-        "bedrock-agentcore:ListEvents"
-      ],
-      "Resource": "arn:aws:bedrock-agentcore:us-east-1:<account-id>:memory/LabAgent_TeamXX_Memory"
     },
     {
       "Effect": "Allow",
@@ -153,7 +110,7 @@ Create one IAM user per student or team. Attach only the scoped policy below —
 
 Replace `<account-id>` and `TeamXX` with the actual values for each team.
 
-The Bedrock statement is scoped to low-cost lite/OSS models only — Amazon Nova Lite/Micro, Anthropic Claude Haiku, Meta Llama 8B, Mistral 7B/Mixtral 8x7B, and OpenAI gpt-oss — rather than the full model catalog, to bound per-team inference cost. `openai.gpt-oss*` is included because it's the default model `validate-students.py`/`validate-instructor.py` invoke; leaving it out would break their own validation run. It isn't region-locked, since model access for this course was only ever approved in `us-east-1`. The `inference-profile` ARNs are required alongside the `foundation-model` ARNs because several of these models (Nova, Claude) can only be invoked through a cross-region inference profile, not directly by foundation-model ID.
+The Bedrock and AgentCore statement is intentionally broad (`bedrock:*`, `bedrock-agentcore:*` on `Resource: "*"`) rather than scoped to specific models/actions/ARNs. This is a short (4-hour), low-volume sandbox — a handful of model calls per team — where the cost exposure from broad access is negligible, but a narrow allow-list has repeatedly broken in practice (wrong action name, wrong ARN pattern, a missing bearer-token action) and cost multiple days of debugging per incident. Reliability wins over least-privilege here.
 
 `iam:GetRole`/`iam:ListAttachedRolePolicies` on the execution role let students confirm their policy is attached (Lab 05 Checkpoint 1) without granting broader IAM read access.
 
@@ -210,30 +167,10 @@ The trust principal must be `bedrock-agentcore.amazonaws.com` — the AgentCore 
     {
       "Effect": "Allow",
       "Action": [
-        "bedrock:InvokeModel"
+        "bedrock:*",
+        "bedrock-agentcore:*"
       ],
-      "Resource": "arn:aws:bedrock:us-east-1::foundation-model/*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": "bedrock:CallWithBearerToken",
       "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "bedrock-agentcore:InvokeGateway"
-      ],
-      "Resource": "arn:aws:bedrock-agentcore:us-east-1:<account-id>:gateway/LabAgent-TeamXX-Gateway"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "bedrock-agentcore:CreateEvent",
-        "bedrock-agentcore:GetEvent",
-        "bedrock-agentcore:ListEvents"
-      ],
-      "Resource": "arn:aws:bedrock-agentcore:us-east-1:<account-id>:memory/LabAgent_TeamXX_Memory"
     },
     {
       "Effect": "Allow",

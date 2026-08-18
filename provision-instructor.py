@@ -166,34 +166,14 @@ def execution_permissions_policy(
         "Version": "2012-10-17",
         "Statement": [
             {
+                # Broad on purpose: this is a short-lived demo sandbox with
+                # minimal call volume, and per-model/per-action scoping here
+                # has repeatedly broken (wrong action name, wrong ARN, missing
+                # bearer-token action) and cost days of debugging for no real
+                # cost-control benefit. Trade narrow scoping for reliability.
                 "Effect": "Allow",
-                "Action": [
-                    "bedrock:InvokeModel",
-                    "bedrock:InvokeModelWithResponseStream",
-                ],
-                "Resource": f"arn:aws:bedrock:{region}::foundation-model/*",
-            },
-            {
-                # Bearer-token auth path (Bedrock API keys / OpenAI-compatible
-                # endpoint, AWS_BEARER_TOKEN_BEDROCK). Gates bearer-token calls
-                # independently of the InvokeModel grant above; no resource scoping.
-                "Effect": "Allow",
-                "Action": "bedrock:CallWithBearerToken",
+                "Action": ["bedrock:*", "bedrock-agentcore:*"],
                 "Resource": "*",
-            },
-            {
-                "Effect": "Allow",
-                "Action": ["bedrock-agentcore:InvokeGateway"],
-                "Resource": gateway_arn,
-            },
-            {
-                "Effect": "Allow",
-                "Action": [
-                    "bedrock-agentcore:CreateEvent",
-                    "bedrock-agentcore:GetEvent",
-                    "bedrock-agentcore:ListEvents",
-                ],
-                "Resource": memory_arn,
             },
             {
                 "Effect": "Allow",
