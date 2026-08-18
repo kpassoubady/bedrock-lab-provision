@@ -41,9 +41,22 @@ Create one IAM user per student or team. Attach only the scoped policy below —
     {
       "Effect": "Allow",
       "Action": [
-        "bedrock:InvokeModel"
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream"
       ],
-      "Resource": "arn:aws:bedrock:us-east-1::foundation-model/*"
+      "Resource": [
+        "arn:aws:bedrock:*::foundation-model/amazon.nova-lite*",
+        "arn:aws:bedrock:*::foundation-model/amazon.nova-micro*",
+        "arn:aws:bedrock:*::foundation-model/anthropic.claude*haiku*",
+        "arn:aws:bedrock:*::foundation-model/meta.llama*-8b-*",
+        "arn:aws:bedrock:*::foundation-model/mistral.mistral-7b-*",
+        "arn:aws:bedrock:*::foundation-model/mistral.mixtral-8x7b-*",
+        "arn:aws:bedrock:*::foundation-model/openai.gpt-oss*",
+        "arn:aws:bedrock:*:<account-id>:inference-profile/*nova-lite*",
+        "arn:aws:bedrock:*:<account-id>:inference-profile/*nova-micro*",
+        "arn:aws:bedrock:*:<account-id>:inference-profile/*claude*haiku*",
+        "arn:aws:bedrock:*:<account-id>:inference-profile/*gpt-oss*"
+      ]
     },
     {
       "Effect": "Allow",
@@ -53,30 +66,41 @@ Create one IAM user per student or team. Attach only the scoped policy below —
     {
       "Effect": "Allow",
       "Action": [
-        "bedrock:InvokeAgentRuntime",
-        "bedrock:GetAgentRuntime"
+        "bedrock-agentcore:CreateAgentRuntime",
+        "bedrock-agentcore:UpdateAgentRuntime",
+        "bedrock-agentcore:GetAgentRuntime",
+        "bedrock-agentcore:InvokeAgentRuntime"
       ],
-      "Resource": "arn:aws:bedrock:us-east-1:<account-id>:agent-runtime/LabAgent-TeamXX-*"
+      "Resource": "arn:aws:bedrock-agentcore:us-east-1:<account-id>:runtime/*"
     },
     {
       "Effect": "Allow",
       "Action": [
-        "bedrock:InvokeAgentGateway"
+        "bedrock-agentcore:InvokeGateway"
       ],
-      "Resource": "arn:aws:bedrock:us-east-1:<account-id>:agent-gateway/LabAgent-TeamXX-*"
+      "Resource": "arn:aws:bedrock-agentcore:us-east-1:<account-id>:gateway/LabAgent-TeamXX-Gateway"
     },
     {
       "Effect": "Allow",
       "Action": [
-        "bedrock:GetAgentMemory",
-        "bedrock:UpdateAgentMemory"
+        "bedrock-agentcore:CreateEvent",
+        "bedrock-agentcore:GetEvent",
+        "bedrock-agentcore:ListEvents"
       ],
-      "Resource": "arn:aws:bedrock:us-east-1:<account-id>:agent-memory/LabAgent-TeamXX-*"
+      "Resource": "arn:aws:bedrock-agentcore:us-east-1:<account-id>:memory/LabAgent_TeamXX_Memory"
     },
     {
       "Effect": "Allow",
       "Action": [
         "iam:PassRole"
+      ],
+      "Resource": "arn:aws:iam::<account-id>:role/LabAgent-TeamXX-ExecutionRole"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iam:GetRole",
+        "iam:ListAttachedRolePolicies"
       ],
       "Resource": "arn:aws:iam::<account-id>:role/LabAgent-TeamXX-ExecutionRole"
     },
@@ -129,6 +153,10 @@ Create one IAM user per student or team. Attach only the scoped policy below —
 
 Replace `<account-id>` and `TeamXX` with the actual values for each team.
 
+The Bedrock statement is scoped to low-cost lite/OSS models only — Amazon Nova Lite/Micro, Anthropic Claude Haiku, Meta Llama 8B, Mistral 7B/Mixtral 8x7B, and OpenAI gpt-oss — rather than the full model catalog, to bound per-team inference cost. `openai.gpt-oss*` is included because it's the default model `validate-students.py`/`validate-instructor.py` invoke; leaving it out would break their own validation run. It isn't region-locked, since model access for this course was only ever approved in `us-east-1`. The `inference-profile` ARNs are required alongside the `foundation-model` ARNs because several of these models (Nova, Claude) can only be invoked through a cross-region inference profile, not directly by foundation-model ID.
+
+`iam:GetRole`/`iam:ListAttachedRolePolicies` on the execution role let students confirm their policy is attached (Lab 05 Checkpoint 1) without granting broader IAM read access.
+
 The X-Ray, `logs:StartQuery`/`GetQueryResults`, and expanded CloudWatch read actions let students open the **CloudWatch → GenAI Observability → AgentCore → Traces** view in Checkpoint 5. These read APIs do not support resource-level scoping, so their statement uses `Resource: "*"`; students still see only traces their own Runtime emits.
 
 ### Console Login Profile
@@ -155,13 +183,23 @@ Create an IAM role that AgentCore Runtime assumes when running the student agent
     {
       "Effect": "Allow",
       "Principal": {
-        "Service": "bedrock.amazonaws.com"
+        "Service": "bedrock-agentcore.amazonaws.com"
       },
-      "Action": "sts:AssumeRole"
+      "Action": "sts:AssumeRole",
+      "Condition": {
+        "StringEquals": {
+          "aws:SourceAccount": "<account-id>"
+        },
+        "ArnLike": {
+          "aws:SourceArn": "arn:aws:bedrock-agentcore:us-east-1:<account-id>:*"
+        }
+      }
     }
   ]
 }
 ```
+
+The trust principal must be `bedrock-agentcore.amazonaws.com` — the AgentCore Runtime service, not `bedrock.amazonaws.com`. A role trusting the wrong principal cannot be assumed at deploy time, regardless of what the attached policy allows.
 
 ### Execution Role Policy
 
@@ -184,17 +222,18 @@ Create an IAM role that AgentCore Runtime assumes when running the student agent
     {
       "Effect": "Allow",
       "Action": [
-        "bedrock:InvokeAgentGateway"
+        "bedrock-agentcore:InvokeGateway"
       ],
-      "Resource": "arn:aws:bedrock:us-east-1:<account-id>:agent-gateway/LabAgent-TeamXX-Gateway"
+      "Resource": "arn:aws:bedrock-agentcore:us-east-1:<account-id>:gateway/LabAgent-TeamXX-Gateway"
     },
     {
       "Effect": "Allow",
       "Action": [
-        "bedrock:GetAgentMemory",
-        "bedrock:UpdateAgentMemory"
+        "bedrock-agentcore:CreateEvent",
+        "bedrock-agentcore:GetEvent",
+        "bedrock-agentcore:ListEvents"
       ],
-      "Resource": "arn:aws:bedrock:us-east-1:<account-id>:agent-memory/LabAgent_TeamXX_Memory"
+      "Resource": "arn:aws:bedrock-agentcore:us-east-1:<account-id>:memory/LabAgent_TeamXX_Memory"
     },
     {
       "Effect": "Allow",
@@ -208,6 +247,8 @@ Create an IAM role that AgentCore Runtime assumes when running the student agent
   ]
 }
 ```
+
+Unlike the student IAM user's policy, `bedrock:InvokeModel` here is not scoped to the lite/OSS list — the execution role is what the deployed agent runs as, not a student-facing credential, so it was left as-is rather than folded into this pass.
 
 ## 4. S3 Bucket
 

@@ -37,7 +37,7 @@ Create an IAM user or role named `bedrock-instructor` with the following permiss
 
 ### Additional Inline Policy
 
-Attach this inline policy to cover AgentCore-specific actions not included in the managed policies above:
+Attach this inline policy to cover AgentCore-specific actions not included in the managed policies above. It's tracked at `env/agentcore-inline-policy.json` and referenced by `permission-request-agentcore.md` — keep both in sync with this block.
 
 ```json
 {
@@ -46,20 +46,25 @@ Attach this inline policy to cover AgentCore-specific actions not included in th
     {
       "Effect": "Allow",
       "Action": [
-        "bedrock:CreateAgentRuntime",
-        "bedrock:UpdateAgentRuntime",
-        "bedrock:DeleteAgentRuntime",
-        "bedrock:InvokeAgentRuntime",
-        "bedrock:CreateAgentGateway",
-        "bedrock:DeleteAgentGateway",
-        "bedrock:CreateAgentMemory",
-        "bedrock:DeleteAgentMemory",
-        "bedrock:GetAgentRuntime",
-        "bedrock:GetAgentGateway",
-        "bedrock:GetAgentMemory",
-        "bedrock:ListAgentRuntimes",
-        "bedrock:ListAgentGateways",
-        "bedrock:ListAgentMemories"
+        "bedrock-agentcore:CreateAgentRuntime",
+        "bedrock-agentcore:UpdateAgentRuntime",
+        "bedrock-agentcore:DeleteAgentRuntime",
+        "bedrock-agentcore:GetAgentRuntime",
+        "bedrock-agentcore:ListAgentRuntimes",
+        "bedrock-agentcore:InvokeAgentRuntime",
+        "bedrock-agentcore:InvokeAgentRuntimeForUser",
+        "bedrock-agentcore:CreateGateway",
+        "bedrock-agentcore:DeleteGateway",
+        "bedrock-agentcore:GetGateway",
+        "bedrock-agentcore:ListGateways",
+        "bedrock-agentcore:InvokeGateway",
+        "bedrock-agentcore:CreateMemory",
+        "bedrock-agentcore:DeleteMemory",
+        "bedrock-agentcore:GetMemory",
+        "bedrock-agentcore:ListMemories",
+        "bedrock-agentcore:CreateEvent",
+        "bedrock-agentcore:GetEvent",
+        "bedrock-agentcore:ListEvents"
       ],
       "Resource": "*"
     },
@@ -73,6 +78,8 @@ Attach this inline policy to cover AgentCore-specific actions not included in th
   ]
 }
 ```
+
+The action prefix is `bedrock-agentcore:`, not `bedrock:` — AgentCore is a separate service namespace. An earlier draft of this document used the `bedrock:` prefix; that version doesn't grant anything, since none of those actions exist.
 
 ## 3. Instructor Demo Sandbox
 

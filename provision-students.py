@@ -291,9 +291,32 @@ def sandbox_permissions_policy(
         "Version": "2012-10-17",
         "Statement": [
             {
+                # Scoped to low-cost lite/OSS models only (Amazon Nova Lite/Micro,
+                # Anthropic Claude Haiku, Meta Llama 8B, Mistral 7B/Mixtral 8x7B,
+                # OpenAI gpt-oss) — not region-locked, since model access for this
+                # course was only ever approved in us-east-1. gpt-oss is included
+                # because it's the default model validate-students.py invokes.
+                # Inference-profile ARNs are included because several of these
+                # models require cross-region inference profiles rather than
+                # direct on-demand invocation.
                 "Effect": "Allow",
-                "Action": ["bedrock:InvokeModel"],
-                "Resource": f"arn:aws:bedrock:{region}::foundation-model/*",
+                "Action": [
+                    "bedrock:InvokeModel",
+                    "bedrock:InvokeModelWithResponseStream",
+                ],
+                "Resource": [
+                    "arn:aws:bedrock:*::foundation-model/amazon.nova-lite*",
+                    "arn:aws:bedrock:*::foundation-model/amazon.nova-micro*",
+                    "arn:aws:bedrock:*::foundation-model/anthropic.claude*haiku*",
+                    "arn:aws:bedrock:*::foundation-model/meta.llama*-8b-*",
+                    "arn:aws:bedrock:*::foundation-model/mistral.mistral-7b-*",
+                    "arn:aws:bedrock:*::foundation-model/mistral.mixtral-8x7b-*",
+                    "arn:aws:bedrock:*::foundation-model/openai.gpt-oss*",
+                    f"arn:aws:bedrock:*:{account_id}:inference-profile/*nova-lite*",
+                    f"arn:aws:bedrock:*:{account_id}:inference-profile/*nova-micro*",
+                    f"arn:aws:bedrock:*:{account_id}:inference-profile/*claude*haiku*",
+                    f"arn:aws:bedrock:*:{account_id}:inference-profile/*gpt-oss*",
+                ],
             },
             {
                 # Bearer-token auth path (Bedrock API keys / OpenAI-compatible
