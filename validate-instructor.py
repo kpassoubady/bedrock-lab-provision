@@ -19,6 +19,7 @@ except ImportError:
 
 
 DEFAULT_MANIFEST = "env/instructor-manifest.json"
+DEFAULT_MODEL_ID = "openai.gpt-oss-20b-1:0"
 PLACEHOLDER_AGENT_KEY = "instructor-demo/v1/agent.py"
 
 
@@ -248,7 +249,8 @@ def main() -> int:
     )
     parser.add_argument(
         "--model-id",
-        help="optionally invoke this Bedrock model as the current AWS identity",
+        default=DEFAULT_MODEL_ID,
+        help=f"Bedrock model to invoke as the current AWS identity (default: {DEFAULT_MODEL_ID}); pass '' to skip",
     )
     parser.add_argument(
         "--wait-seconds",
