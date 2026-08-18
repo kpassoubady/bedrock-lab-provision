@@ -204,7 +204,31 @@ This creates one isolated sandbox per team and writes:
 python3 provision-students.py --teams 1 --start-team 11 --prefix LabAgent --region us-west-2
 ```
 
-### 5. Verify student sandboxes
+### 5. Validate student sandboxes
+
+Run the automated validator with the same `bedrock-course-student` profile used for provisioning:
+
+```bash
+export AWS_PROFILE=bedrock-course-student
+python3 validate-students.py --manifest env/student-manifest.json --region us-west-2
+```
+
+The validator checks, per team, the S3 bucket security and placeholder artifact, IAM execution role and inline policy, Gateway `READY` status, Memory `ACTIVE` status, CloudWatch log group retention, the IAM sandbox user and its inline policy, and (if permitted) the console login profile. It exits with status `1` if any required check fails, making it suitable for a shell script or CI job.
+
+Validate a subset of teams with `--team` (repeatable):
+
+```bash
+python3 validate-students.py --manifest env/student-manifest.json --region us-west-2 --team 1 --team 2
+```
+
+Optionally include a live model invocation:
+
+```bash
+python3 validate-students.py --manifest env/student-manifest.json --region us-west-2 \
+  --model-id <model-id>
+```
+
+### 6. Verify student sandboxes
 
 For each team, using their credentials from `env/team-XX.env`:
 
@@ -224,9 +248,9 @@ aws bedrock-agentcore invoke-agent-gateway --gateway-name LabAgent-Team01-Gatewa
 
 See the verification section at the end of `provision-students.py` output or `provisioning-student.md` section 11 for the full checklist.
 
-### 6. Distribute credentials
+### 7. Distribute credentials
 
-Each team receives one `.env` file from the `env/` directory. **Do not email credentials in plain text.** Use a one-time secret service or the company's internal credential vault.
+Each team receives one `.env` file from the `env/` directory. **Do not email credentials in plain text, and never copy them into `bedrock-companion` or any other git repo.** Use `distribute-credentials.py` to send short-lived presigned S3 links instead — see [docs/credential-distribution.md](./docs/credential-distribution.md) for the full workflow and fallback options.
 
 ## Resource Naming Summary
 
@@ -248,7 +272,7 @@ Each team receives one `.env` file from the `env/` directory. **Do not email cre
 | Execution role | `LabAgent-Team01-ExecutionRole`         |
 | S3 bucket      | `labagent-team01-<account-id>-<random>` |
 | Gateway        | `LabAgent-Team01-Gateway`               |
-| Memory         | `LabAgent-Team01-Memory`                |
+| Memory         | `LabAgent_Team01_Memory`                |
 | Log group      | `/aws/bedrock/agentcore/team01`         |
 
 ## Teardown
@@ -264,7 +288,7 @@ python3 teardown.py --all --region us-west-2
 
 # Or tear down one at a time
 python3 teardown.py --manifest env/instructor-manifest.json --region us-west-2
-python3 teardown.py --manifest env/student-manifest.json --region us-west-2
+python3 teardown.py --manifest env/student-manifest.json
 ```
 
 Resources deleted per environment:
@@ -287,6 +311,7 @@ Instructor provisioning and teardown use the `bedrock-agentcore-control` boto3 c
 | `provision-instructor.py`    | Provisions the instructor demo sandbox                            |
 | `validate-instructor.py`     | Validates provisioned instructor resources and optional model access |
 | `provision-students.py`      | Provisions per-team student sandboxes                             |
+| `validate-students.py`       | Validates provisioned per-team student resources and optional model access |
 | `teardown.py`                | Tears down all resources (reads manifest files from provisioning) |
 | `provisioning-instructor.md` | Full specification — instructor environment                       |
 | `provisioning-student.md`    | Full specification — student sandboxes                            |

@@ -16,7 +16,7 @@ Resources created PER TEAM
   - IAM execution role       LabAgent-TeamXX-ExecutionRole
   - S3 bucket                labagent-teamXX-<account-id>-<random>
   - AgentCore Gateway        LabAgent-TeamXX-Gateway
-  - AgentCore Memory         LabAgent-TeamXX-Memory
+  - AgentCore Memory         LabAgent_TeamXX_Memory
   - CloudWatch log group     /aws/bedrock/agentcore/teamXX
   - Access keys              one pair per IAM user
   - Console login profile    browser sign-in for CloudWatch trace inspection
@@ -144,8 +144,8 @@ def _gateway_name(prefix: str, team_num: int) -> str:
 
 
 def _memory_name(prefix: str, team_num: int) -> str:
-    """LabAgent-TeamXX-Memory"""
-    return f"{prefix}-{_team_tag(team_num)}-Memory"
+    """LabAgent_TeamXX_Memory (Memory names must match [a-zA-Z][a-zA-Z0-9_]{0,47} — no hyphens)"""
+    return f"{prefix.replace('-', '_')}_{_team_tag(team_num)}_Memory"
 
 
 def _log_group_name(team_num: int) -> str:
@@ -154,8 +154,8 @@ def _log_group_name(team_num: int) -> str:
 
 
 def _agent_name(prefix: str, team_num: int) -> str:
-    """LabAgent-TeamXX (used in .env as AGENT_NAME)"""
-    return f"{prefix}-{_team_tag(team_num)}"
+    """LabAgent_TeamXX (used in .env as AGENT_NAME; must match [a-zA-Z][a-zA-Z0-9_]{0,47} — no hyphens)"""
+    return f"{prefix.replace('-', '_')}_{_team_tag(team_num)}"
 
 
 def _generate_console_password() -> str:
@@ -317,6 +317,13 @@ def sandbox_permissions_policy(
                 "Resource": execution_role_arn,
             },
             {
+                # Lets students confirm the restricted policy is attached
+                # (Lab 05 Checkpoint 1) without granting broader IAM read access.
+                "Effect": "Allow",
+                "Action": ["iam:GetRole", "iam:ListAttachedRolePolicies"],
+                "Resource": execution_role_arn,
+            },
+            {
                 "Effect": "Allow",
                 "Action": [
                     "s3:GetObject",
@@ -427,12 +434,43 @@ class StudentProvisioner:
     # ------------------------------------------------------------------
     # S3 — one bucket per team
     # ------------------------------------------------------------------
-    def _create_bucket(self, team_num: int) -> str:
-        bucket = _bucket_name(self.prefix, team_num, self.account_id)
+    def _find_bucket(self, team_num: int) -> str | None:
+        manifest_path = Path(OUTPUT_DIR) / STUDENT_MANIFEST_FILE
+        if not manifest_path.exists():
+            return None
+        try:
+            manifest = json.loads(manifest_path.read_text())
+        except json.JSONDecodeError:
+            return None
+        if manifest.get("region") != self.region:
+            return None
+        for team in manifest.get("teams", []):
+            if team.get("team_num") != team_num:
+                continue
+            existing_bucket = team.get("bucket", "")
+            if f"-{self.account_id}-" not in existing_bucket:
+                continue
+            try:
+                self.s3.head_bucket(Bucket=existing_bucket)
+                return existing_bucket
+            except ClientError as e:
+                if e.response.get("Error", {}).get("Code") not in ("404", "NoSuchBucket"):
+                    raise
+                return None
+        return None
 
+    def _create_bucket(self, team_num: int) -> str:
         if self.dry_run:
-            print(f"    [DRY RUN] Would create S3 bucket: {bucket}")
+            bucket = _bucket_name(self.prefix, team_num, self.account_id)
+            print(f"    [DRY RUN] Would create or reuse S3 bucket: {bucket}")
             return bucket
+
+        existing_bucket = self._find_bucket(team_num)
+        if existing_bucket:
+            print(f"    S3 bucket already exists: {existing_bucket} (reusing)")
+            return existing_bucket
+
+        bucket = _bucket_name(self.prefix, team_num, self.account_id)
 
         if self.region == "us-east-1":
             self.s3.create_bucket(Bucket=bucket)
@@ -752,7 +790,11 @@ class StudentProvisioner:
             PolicyDocument=json.dumps(policy_doc),
         )
 
-        # Generate access keys
+        # Generate access keys — rotate on rerun since a prior run's secret
+        # key cannot be retrieved, and IAM caps users at 2 access keys.
+        existing_keys = self.iam.list_access_keys(UserName=user_name)["AccessKeyMetadata"]
+        for key in existing_keys:
+            self.iam.delete_access_key(UserName=user_name, AccessKeyId=key["AccessKeyId"])
         keys = self.iam.create_access_key(UserName=user_name)["AccessKey"]
 
         # Console login profile (browser sign-in for CloudWatch trace view)
@@ -831,7 +873,8 @@ class StudentProvisioner:
         execution_role_arn = self._create_execution_role(team_num)
 
         if not self.dry_run:
-            time.sleep(2)  # brief IAM propagation wait
+            print("    Waiting for IAM propagation (2s)...")
+            time.sleep(2)
 
         # 4. AgentCore Gateway
         print(f"  [4/7] AgentCore Gateway...")

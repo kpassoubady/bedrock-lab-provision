@@ -25,7 +25,7 @@ Use a consistent prefix scheme to isolate teams within the same account. The cat
 | Execution role | `LabAgent-TeamXX-ExecutionRole` | `LabAgent-Team01-ExecutionRole` |
 | S3 bucket | `labagent-teamXX-<account-id>` | `labagent-team01-123456789012` |
 | AgentCore Gateway | `LabAgent-TeamXX-Gateway` | `LabAgent-Team01-Gateway` |
-| AgentCore Memory | `LabAgent-TeamXX-Memory` | `LabAgent-Team01-Memory` |
+| AgentCore Memory | `LabAgent_TeamXX_Memory` | `LabAgent_Team01_Memory` |
 | CloudWatch log group | `/aws/bedrock/agentcore/teamXX` | `/aws/bedrock/agentcore/team01` |
 
 ## 2. IAM User (Sandbox Identity)
@@ -184,7 +184,7 @@ Create an IAM role that AgentCore Runtime assumes when running the student agent
         "bedrock:GetAgentMemory",
         "bedrock:UpdateAgentMemory"
       ],
-      "Resource": "arn:aws:bedrock:us-east-1:<account-id>:agent-memory/LabAgent-TeamXX-Memory"
+      "Resource": "arn:aws:bedrock:us-east-1:<account-id>:agent-memory/LabAgent_TeamXX_Memory"
     },
     {
       "Effect": "Allow",
@@ -223,7 +223,7 @@ The Gateway target must be operational and returning the expected response befor
 
 Pre-create one Memory resource per team. The lab exercise verifies short-term memory continuity by repeating a request with the same `actorId` and `sessionId`.
 
-- **Memory name:** `LabAgent-TeamXX-Memory`
+- **Memory name:** `LabAgent_TeamXX_Memory`
 - **Type:** Short-term (session-scoped)
 - **Retention:** Default (duration of the class session is sufficient)
 
