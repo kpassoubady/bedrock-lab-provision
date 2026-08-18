@@ -47,6 +47,11 @@ Create one IAM user per student or team. Attach only the scoped policy below —
     },
     {
       "Effect": "Allow",
+      "Action": "bedrock:CallWithBearerToken",
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
       "Action": [
         "bedrock:InvokeAgentRuntime",
         "bedrock:GetAgentRuntime"
@@ -170,6 +175,11 @@ Create an IAM role that AgentCore Runtime assumes when running the student agent
         "bedrock:InvokeModel"
       ],
       "Resource": "arn:aws:bedrock:us-east-1::foundation-model/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "bedrock:CallWithBearerToken",
+      "Resource": "*"
     },
     {
       "Effect": "Allow",
