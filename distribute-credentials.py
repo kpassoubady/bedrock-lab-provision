@@ -248,7 +248,7 @@ def main() -> int:
     parser.add_argument("--include-csv", action="store_true", help="Also upload team-XX-credentials.csv")
     parser.add_argument("--bucket", help="Handout bucket name (default: <prefix>-handout-<account-id>)")
     parser.add_argument("--prefix", default="LabAgent", help="Resource prefix, used to name the default bucket (default: LabAgent)")
-    parser.add_argument("--region", default="us-west-2", help="AWS region (default: us-west-2)")
+    parser.add_argument("--region", default="us-east-1", help="AWS region (default: us-east-1)")
     parser.add_argument("--dry-run", action="store_true", help="Print what would happen without making AWS calls")
     parser.add_argument("--revoke", metavar="RUN_ID", help="Delete all handout files for this run id, invalidating its links immediately")
     args = parser.parse_args()

@@ -57,7 +57,8 @@ Create one IAM user per student or team. Attach only the scoped policy below —
       "Effect": "Allow",
       "Action": [
         "iam:GetRole",
-        "iam:ListAttachedRolePolicies"
+        "iam:ListRolePolicies",
+        "iam:GetRolePolicy"
       ],
       "Resource": "arn:aws:iam::<account-id>:role/LabAgent-TeamXX-ExecutionRole"
     },
@@ -112,7 +113,7 @@ Replace `<account-id>` and `TeamXX` with the actual values for each team.
 
 The Bedrock and AgentCore statement is intentionally broad (`bedrock:*`, `bedrock-agentcore:*` on `Resource: "*"`) rather than scoped to specific models/actions/ARNs. This is a short (4-hour), low-volume sandbox — a handful of model calls per team — where the cost exposure from broad access is negligible, but a narrow allow-list has repeatedly broken in practice (wrong action name, wrong ARN pattern, a missing bearer-token action) and cost multiple days of debugging per incident. Reliability wins over least-privilege here.
 
-`iam:GetRole`/`iam:ListAttachedRolePolicies` on the execution role let students confirm their policy is attached (Lab 05 Checkpoint 1) without granting broader IAM read access.
+`iam:GetRole`/`iam:ListRolePolicies`/`iam:GetRolePolicy` on the execution role let students confirm their policy is attached (Lab 05 Checkpoint 1) without granting broader IAM read access. `AgentCoreExecutionPolicy` is attached inline (`put_role_policy`), so students need the inline-policy read APIs — `iam:ListAttachedRolePolicies` only covers managed policies and would always return empty for this role.
 
 The X-Ray, `logs:StartQuery`/`GetQueryResults`, and expanded CloudWatch read actions let students open the **CloudWatch → GenAI Observability → AgentCore → Traces** view in Checkpoint 5. These read APIs do not support resource-level scoping, so their statement uses `Resource: "*"`; students still see only traces their own Runtime emits.
 

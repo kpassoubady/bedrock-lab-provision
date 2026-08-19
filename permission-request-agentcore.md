@@ -1,7 +1,7 @@
 # Permission Fix Request — Instructor Bedrock + AgentCore Access
 
 **Account:** 962804699607
-**Region:** us-west-2
+**Region:** us-east-1
 **Affected identity:** `arn:aws:iam::962804699607:user/instructor-01`
 
 ## Problem
@@ -11,7 +11,7 @@ The instructor IAM user (`instructor-01`) cannot use Amazon Bedrock (chat, API k
 ```
 AccessDeniedException: User: arn:aws:iam::962804699607:user/instructor-01 is not
 authorized to perform: bedrock-agentcore:CreateAgentRuntime on resource:
-arn:aws:bedrock-agentcore:us-west-2:962804699607:runtime/* because no
+arn:aws:bedrock-agentcore:us-east-1:962804699607:runtime/* because no
 identity-based policy allows the bedrock-agentcore:CreateAgentRuntime action
 ```
 
