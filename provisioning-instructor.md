@@ -37,7 +37,7 @@ Create an IAM user or role named `bedrock-instructor` with the following permiss
 
 ### Additional Inline Policy
 
-Attach this inline policy to cover AgentCore-specific actions not included in the managed policies above:
+Attach this inline policy to cover AgentCore-specific actions not included in the managed policies above. It's tracked at `env/agentcore-inline-policy.json` and referenced by `permission-request-agentcore.md` — keep both in sync with this block.
 
 ```json
 {
@@ -45,22 +45,7 @@ Attach this inline policy to cover AgentCore-specific actions not included in th
   "Statement": [
     {
       "Effect": "Allow",
-      "Action": [
-        "bedrock:CreateAgentRuntime",
-        "bedrock:UpdateAgentRuntime",
-        "bedrock:DeleteAgentRuntime",
-        "bedrock:InvokeAgentRuntime",
-        "bedrock:CreateAgentGateway",
-        "bedrock:DeleteAgentGateway",
-        "bedrock:CreateAgentMemory",
-        "bedrock:DeleteAgentMemory",
-        "bedrock:GetAgentRuntime",
-        "bedrock:GetAgentGateway",
-        "bedrock:GetAgentMemory",
-        "bedrock:ListAgentRuntimes",
-        "bedrock:ListAgentGateways",
-        "bedrock:ListAgentMemories"
-      ],
+      "Action": "bedrock-agentcore:*",
       "Resource": "*"
     },
     {
@@ -73,6 +58,8 @@ Attach this inline policy to cover AgentCore-specific actions not included in th
   ]
 }
 ```
+
+The action prefix is `bedrock-agentcore:`, not `bedrock:` — AgentCore is a separate service namespace. An earlier draft of this document used the `bedrock:` prefix; that version doesn't grant anything, since none of those actions exist. The action is a wildcard (`bedrock-agentcore:*`) rather than an enumerated list, for the same reason the student policy in `provisioning-student.md` is broad: per-action scoping here has repeatedly missed actions or used the wrong name, costing more debugging time than the broader grant is worth for a short-lived training account.
 
 ## 3. Instructor Demo Sandbox
 

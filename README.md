@@ -100,14 +100,14 @@ aws configure --profile bedrock-course-instructor
 When prompted:
 - **AWS Access Key ID**: paste the key used for the instructor account/role
 - **AWS Secret Access Key**: paste the matching secret
-- **Default region name**: `us-west-2`
+- **Default region name**: `us-east-1`
 - **Default output format**: `json`
 
 ```bash
 aws configure --profile bedrock-course-student
 ```
 
-When prompted, use the key/secret for the student provisioning account/role, with the same region (`us-west-2`) and output format (`json`).
+When prompted, use the key/secret for the student provisioning account/role, with the same region (`us-east-1`) and output format (`json`).
 
 Export the profile that matches the step you're running:
 
@@ -124,7 +124,7 @@ Alternatively, use environment variables directly:
 ```bash
 export AWS_ACCESS_KEY_ID=AKIA...
 export AWS_SECRET_ACCESS_KEY=...
-export AWS_DEFAULT_REGION=us-west-2
+export AWS_DEFAULT_REGION=us-east-1
 ```
 
 ### 6. Bedrock Model Access
@@ -132,10 +132,10 @@ export AWS_DEFAULT_REGION=us-west-2
 Enable model access in the target region before provisioning:
 
 1. Log in to the AWS Console
-2. Go to **Bedrock → Model access** (in `us-west-2` region)
+2. Go to **Bedrock → Model access** (in `us-east-1` region)
 3. Enable the models the course uses (check with the instructor)
 
-> **Target region**: This provisioning targets `us-west-2`. See `logistics/amazon.md` for console login details.
+> **Target region**: This provisioning targets `us-east-1`. See `logistics/amazon.md` for console login details.
 
 ## Step-by-Step Provisioning Order
 
@@ -144,8 +144,8 @@ Provision in this order. The instructor demo should be created first so it can s
 ### 1. Dry-run both scripts (no AWS calls)
 
 ```bash
-python3 provision-instructor.py --region us-west-2 --dry-run
-python3 provision-students.py --teams 2 --region us-west-2 --dry-run
+python3 provision-instructor.py --region us-east-1 --dry-run
+python3 provision-students.py --teams 2 --region us-east-1 --dry-run
 ```
 
 Review the output to confirm the naming and resource counts match your expectations.
@@ -154,7 +154,7 @@ Review the output to confirm the naming and resource counts match your expectati
 
 ```bash
 export AWS_PROFILE=bedrock-course-instructor
-python3 provision-instructor.py --region us-west-2
+python3 provision-instructor.py --region us-east-1
 ```
 
 This creates the instructor's working demo sandbox and writes:
@@ -170,7 +170,7 @@ Run the automated validator with the same `bedrock-course-instructor` profile us
 
 ```bash
 export AWS_PROFILE=bedrock-course-instructor
-python3 validate-instructor.py --manifest env/instructor-manifest.json --region us-west-2
+python3 validate-instructor.py --manifest env/instructor-manifest.json --region us-east-1
 ```
 
 The validator checks the AWS account, S3 bucket security and placeholder artifact, IAM execution role and inline policy, Gateway `READY` status, Memory `ACTIVE` status, and CloudWatch log group retention. It exits with status `1` if any required check fails, making it suitable for a shell script or CI job.
@@ -178,7 +178,7 @@ The validator checks the AWS account, S3 bucket security and placeholder artifac
 Optionally include a live model invocation:
 
 ```bash
-python3 validate-instructor.py --manifest env/instructor-manifest.json --region us-west-2 \
+python3 validate-instructor.py --manifest env/instructor-manifest.json --region us-east-1 \
   --model-id <model-id>
 ```
 
@@ -188,7 +188,7 @@ After deploying the real demo agent, separately verify Runtime invocation, Memor
 
 ```bash
 export AWS_PROFILE=bedrock-course-student
-python3 provision-students.py --teams 2 --prefix LabAgent --region us-west-2
+python3 provision-students.py --teams 2 --prefix LabAgent --region us-east-1
 ```
 
 This creates one isolated sandbox per team and writes:
@@ -201,7 +201,7 @@ This creates one isolated sandbox per team and writes:
 **For late additions**, use `--start-team` to avoid collisions:
 
 ```bash
-python3 provision-students.py --teams 1 --start-team 11 --prefix LabAgent --region us-west-2
+python3 provision-students.py --teams 1 --start-team 11 --prefix LabAgent --region us-east-1
 ```
 
 ### 5. Validate student sandboxes
@@ -210,7 +210,7 @@ Run the automated validator with the same `bedrock-course-student` profile used 
 
 ```bash
 export AWS_PROFILE=bedrock-course-student
-python3 validate-students.py --manifest env/student-manifest.json --region us-west-2
+python3 validate-students.py --manifest env/student-manifest.json --region us-east-1
 ```
 
 The validator checks, per team, the S3 bucket security and placeholder artifact, IAM execution role and inline policy, Gateway `READY` status, Memory `ACTIVE` status, CloudWatch log group retention, the IAM sandbox user and its inline policy, and (if permitted) the console login profile. It exits with status `1` if any required check fails, making it suitable for a shell script or CI job.
@@ -218,13 +218,13 @@ The validator checks, per team, the S3 bucket security and placeholder artifact,
 Validate a subset of teams with `--team` (repeatable):
 
 ```bash
-python3 validate-students.py --manifest env/student-manifest.json --region us-west-2 --team 1 --team 2
+python3 validate-students.py --manifest env/student-manifest.json --region us-east-1 --team 1 --team 2
 ```
 
 Optionally include a live model invocation:
 
 ```bash
-python3 validate-students.py --manifest env/student-manifest.json --region us-west-2 \
+python3 validate-students.py --manifest env/student-manifest.json --region us-east-1 \
   --model-id <model-id>
 ```
 
@@ -237,13 +237,13 @@ For each team, using their credentials from `env/team-XX.env`:
 source env/team-01.env
 
 # Confirm identity
-aws sts get-caller-identity --region us-west-2
+aws sts get-caller-identity --region us-east-1
 
 # Invoke model
-aws bedrock invoke-model --model-id <model-id> --body '{"prompt":"test"}' --region us-west-2 output.json
+aws bedrock invoke-model --model-id <model-id> --body '{"prompt":"test"}' --region us-east-1 output.json
 
 # Verify Gateway
-aws bedrock-agentcore invoke-agent-gateway --gateway-name LabAgent-Team01-Gateway --region us-west-2
+aws bedrock-agentcore invoke-agent-gateway --gateway-name LabAgent-Team01-Gateway --region us-east-1
 ```
 
 See the verification section at the end of `provision-students.py` output or `provisioning-student.md` section 11 for the full checklist.
@@ -281,13 +281,13 @@ After the course, tear down all resources with `teardown.py`. It reads the manif
 
 ```bash
 # Dry run first — see what would be deleted
-python3 teardown.py --all --region us-west-2 --dry-run
+python3 teardown.py --all --region us-east-1 --dry-run
 
 # Tear down both instructor and student resources
-python3 teardown.py --all --region us-west-2
+python3 teardown.py --all --region us-east-1
 
 # Or tear down one at a time
-python3 teardown.py --manifest env/instructor-manifest.json --region us-west-2
+python3 teardown.py --manifest env/instructor-manifest.json --region us-east-1
 python3 teardown.py --manifest env/student-manifest.json
 ```
 

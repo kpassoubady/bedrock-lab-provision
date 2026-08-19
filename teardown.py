@@ -42,6 +42,7 @@ import argparse
 import json
 import sys
 import textwrap
+import time
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -49,6 +50,8 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 boto3 = None
 ClientError = None
+GATEWAY_TARGET_DELETE_TIMEOUT_SECONDS = 300
+GATEWAY_TARGET_DELETE_POLL_SECONDS = 5
 
 
 def _require_boto3():
@@ -98,10 +101,12 @@ class Teardown:
             self.s3 = None
             self.logs = None
             self.agentcore = None
+            self.lambda_ = None
         else:
             self.iam = boto3.client("iam", region_name=region)
             self.s3 = boto3.client("s3", region_name=region)
             self.logs = boto3.client("logs", region_name=region)
+            self.lambda_ = boto3.client("lambda", region_name=region)
 
             self.agentcore = boto3.client(
                 "bedrock-agentcore-control", region_name=region
@@ -245,6 +250,27 @@ class Teardown:
                 self._errors.append(msg)
 
     # ------------------------------------------------------------------
+    # Lambda
+    # ------------------------------------------------------------------
+    def delete_lambda(self, function_name: str) -> None:
+        """Delete a Lambda function."""
+        if self.dry_run:
+            print(f"  [DRY RUN] Would delete Lambda: {function_name}")
+            return
+
+        try:
+            self.lambda_.delete_function(FunctionName=function_name)
+            print(f"    Deleted Lambda: {function_name}")
+        except ClientError as e:
+            code = e.response["Error"]["Code"]
+            if code == "ResourceNotFoundException":
+                print(f"    Lambda already deleted: {function_name}")
+            else:
+                msg = f"    ERROR deleting Lambda {function_name}: {e}"
+                print(msg)
+                self._errors.append(msg)
+
+    # ------------------------------------------------------------------
     # CloudWatch Logs
     # ------------------------------------------------------------------
     def delete_log_group(self, log_group: str) -> None:
@@ -282,8 +308,67 @@ class Teardown:
             if not next_token:
                 return ""
 
+    def _gateway_targets(self, gateway_identifier: str) -> list[dict]:
+        targets = []
+        next_token = None
+        while True:
+            request = {"gatewayIdentifier": gateway_identifier, "maxResults": 100}
+            if next_token:
+                request["nextToken"] = next_token
+            response = self.agentcore.list_gateway_targets(**request)
+            targets.extend(response.get("items", []))
+            next_token = response.get("nextToken")
+            if not next_token:
+                return targets
+
+    def delete_gateway_targets(self, gateway_identifier: str) -> bool:
+        """Delete every target on a Gateway. DeleteGateway fails while any target remains."""
+        if self.dry_run:
+            print(f"  [DRY RUN] Would delete Gateway targets on: {gateway_identifier}")
+            return True
+        if not gateway_identifier:
+            return True
+
+        try:
+            for item in self._gateway_targets(gateway_identifier):
+                target_name = item.get("name", item["targetId"])
+                if item.get("status") == "DELETING":
+                    print(f"    Gateway target already deleting: {target_name}")
+                    continue
+                self.agentcore.delete_gateway_target(
+                    gatewayIdentifier=gateway_identifier,
+                    targetId=item["targetId"],
+                )
+                print(f"    Deleting Gateway target: {target_name}")
+
+            deadline = time.monotonic() + GATEWAY_TARGET_DELETE_TIMEOUT_SECONDS
+            while self._gateway_targets(gateway_identifier):
+                if time.monotonic() >= deadline:
+                    msg = (
+                        f"    ERROR deleting Gateway targets on {gateway_identifier}: "
+                        f"targets remained after "
+                        f"{GATEWAY_TARGET_DELETE_TIMEOUT_SECONDS} seconds"
+                    )
+                    print(msg)
+                    self._errors.append(msg)
+                    return False
+                print(
+                    "    Waiting for Gateway target deletion "
+                    f"({GATEWAY_TARGET_DELETE_POLL_SECONDS}s)..."
+                )
+                time.sleep(GATEWAY_TARGET_DELETE_POLL_SECONDS)
+            return True
+        except ClientError as e:
+            code = e.response.get("Error", {}).get("Code", "")
+            if code in ("ResourceNotFoundException", "NotFoundException"):
+                return True
+            msg = f"    ERROR deleting Gateway targets on {gateway_identifier}: {e}"
+            print(msg)
+            self._errors.append(msg)
+            return False
+
     def delete_gateway(self, gateway_identifier: str, gateway_name: str = "") -> None:
-        """Delete an AgentCore Gateway."""
+        """Delete an AgentCore Gateway (and any targets still attached to it)."""
         display_name = gateway_name or gateway_identifier
         if self.dry_run:
             print(f"  [DRY RUN] Would delete Gateway: {display_name}")
@@ -292,6 +377,9 @@ class Teardown:
         identifier = gateway_identifier or self._gateway_id_for_name(gateway_name)
         if not identifier:
             print(f"    Gateway already deleted: {display_name}")
+            return
+
+        if not self.delete_gateway_targets(identifier):
             return
 
         try:
@@ -399,11 +487,22 @@ class Teardown:
             print(f"\n  [IAM user] {user}")
             self.delete_user(user)
 
-        # 2. AgentCore Gateway
+        # 2. AgentCore Gateway (deletes its targets first)
         gateway = team.get("gateway_name", "")
         if gateway:
             print(f"\n  [Gateway] {gateway}")
             self.delete_gateway(team.get("gateway_id", ""), gateway)
+
+        # 2b. Order-status Lambda backing the Gateway target, and its role
+        lambda_name = team.get("order_status_lambda_name", "")
+        if lambda_name:
+            print(f"\n  [Lambda] {lambda_name}")
+            self.delete_lambda(lambda_name)
+
+        lambda_role = team.get("order_status_lambda_role_name", "")
+        if lambda_role:
+            print(f"\n  [IAM role] {lambda_role}")
+            self.delete_role(lambda_role)
 
         # 3. AgentCore Memory
         memory = team.get("memory_name", "")

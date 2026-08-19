@@ -19,7 +19,7 @@ Keep `env/` as the only place these files live until they are handed to a studen
 ### Send links
 
 ```bash
-python3 distribute-credentials.py --teams 1 2 --expires-hours 4 --region us-west-2
+python3 distribute-credentials.py --teams 1 2 --expires-hours 4 --region us-east-1
 ```
 
 - Creates (once) a bucket named `<prefix>-handout-<account-id>` — SSE-S3 encrypted, all public access blocked, with a 7-day lifecycle rule on the `handouts/` prefix as a backstop cleanup.
@@ -34,7 +34,7 @@ Add `--include-csv` to also ship `team-XX-credentials.csv`. Add `--dry-run` to p
 A presigned URL can only be invalidated by deleting the underlying object — there is no separate revocation list. Once a team has confirmed they've saved their credentials, kill the link:
 
 ```bash
-python3 distribute-credentials.py --revoke <run-id> --bucket <prefix>-handout-<account-id> --region us-west-2
+python3 distribute-credentials.py --revoke <run-id> --bucket <prefix>-handout-<account-id> --region us-east-1
 ```
 
 ### Options
@@ -46,7 +46,7 @@ python3 distribute-credentials.py --revoke <run-id> --bucket <prefix>-handout-<a
 | `--include-csv` | off | Also upload `team-XX-credentials.csv` |
 | `--bucket` | `<prefix>-handout-<account-id>` | Override the handout bucket name |
 | `--prefix` | `LabAgent` | Used only to compute the default bucket name |
-| `--region` | `us-west-2` | AWS region for the bucket and API calls |
+| `--region` | `us-east-1` | AWS region for the bucket and API calls |
 | `--dry-run` | off | Print what would happen, no AWS calls |
 | `--revoke RUN_ID` | — | Delete a run's files immediately, invalidating its links |
 

@@ -123,11 +123,13 @@ class StudentValidator:
         ]
         if not all(public_access.values()):
             raise ValidationError("not all S3 public-access blocks are enabled")
-        key = f"{team['user_name']}/v1/agent.py"
+        key = team.get("s3_key") or (
+            f"{team['user_name']}/v1/deployment_package.zip"
+        )
         artifact = self.s3.head_object(Bucket=bucket, Key=key)
         return (
             f"{bucket}; encrypted; public access blocked; "
-            f"artifact present ({artifact['ContentLength']} bytes)"
+            f"artifact {key} present ({artifact['ContentLength']} bytes)"
         )
 
     def validate_execution_role(self, team: dict) -> str:
