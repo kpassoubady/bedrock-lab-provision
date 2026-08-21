@@ -1731,12 +1731,15 @@ For each team, using their credentials:
         aws sts get-caller-identity --region {region}
 
 2.  Invoke the Bedrock model:
-      aws bedrock invoke-model --model-id <model-id> \\
-        --body '{{"prompt":"test"}}' --region {region} output.json
+      aws bedrock-runtime converse \\
+        --model-id "openai.gpt-oss-20b-1:0" \\
+        --messages '[{{"role":"user","content":[{{"text":"Reply with OK."}}]}}]' \\
+        --inference-config '{{"maxTokens":10,"temperature":0}}' \\
+        --region {region}
 
-3.  Call the Gateway target and confirm the expected synthetic response:
-      aws bedrock-agentcore invoke-agent-gateway \\
-        --gateway-name LabAgent-{prefix}-TeamXX-Gateway --region {region}
+3.  From the bedrock-lab-provision directory, call the Gateway target with
+    the companion lab's SigV4-signed MCP checker and confirm GATEWAY_OK:
+      python3 ../bedrock-companion/day1/labs/05-operating-the-environment/start/check_gateway.py
 
 4.  Upload a test artifact to the S3 bucket and confirm access.
 

@@ -198,11 +198,20 @@ This creates one isolated sandbox per team and writes:
 - `env/team-XX-credentials.csv` — per-team AWS credentials
 - `env/student-manifest.json` — resource manifest for teardown
 
-**For late additions**, use `--start-team` to avoid collisions:
+**For late additions**, use `--start-team` to avoid collisions. For example, to provision one sandbox per student for an initial group of 20 students:
 
 ```bash
-python3 provision-students.py --teams 1 --start-team 11 --prefix LabAgent --region us-east-1
+export AWS_PROFILE=bedrock-course-student
+python3 provision-students.py --teams 20 --prefix LabAgent --region us-east-1
 ```
+
+If 6 more students join later, provision teams 21–26:
+
+```bash
+python3 provision-students.py --teams 6 --start-team 21 --prefix LabAgent --region us-east-1
+```
+
+> **Current limitation:** A later provisioning run overwrites the aggregate `env/credentials.csv` and `env/student-manifest.json` files with only the teams from that run. The individual files for the earlier teams remain, but preserve and merge the aggregate files before validation or teardown.
 
 ### 5. Validate student sandboxes
 
@@ -240,10 +249,15 @@ source env/team-01.env
 aws sts get-caller-identity --region us-east-1
 
 # Invoke model
-aws bedrock invoke-model --model-id <model-id> --body '{"prompt":"test"}' --region us-east-1 output.json
+aws bedrock-runtime converse \
+  --model-id "openai.gpt-oss-20b-1:0" \
+  --messages '[{"role":"user","content":[{"text":"Reply with OK."}]}]' \
+  --inference-config '{"maxTokens":10,"temperature":0}' \
+  --region us-east-1
 
-# Verify Gateway
-aws bedrock-agentcore invoke-agent-gateway --gateway-name LabAgent-Team01-Gateway --region us-east-1
+# Verify the Gateway with a SigV4-signed MCP tools/call request
+python3 ../bedrock-companion/day1/labs/05-operating-the-environment/start/check_gateway.py
+# Expected marker: GATEWAY_OK
 ```
 
 See the verification section at the end of `provision-students.py` output or `provisioning-student.md` section 11 for the full checklist.
