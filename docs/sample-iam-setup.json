@@ -1,0 +1,171 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "S3FullAccess",
+            "Effect": "Allow",
+            "Action": "s3:*",
+            "Resource": "*"
+        },
+        {
+            "Sid": "CloudShellAccessUsWest2Only",
+            "Effect": "Allow",
+            "Action": "cloudshell:*",
+            "Resource": "*",
+            "Condition": {
+                "StringEquals": {
+                    "aws:RequestedRegion": "us-west-2"
+                }
+            }
+        },
+        {
+            "Sid": "IamRoleManagementScopedToCoursePrefix",
+            "Effect": "Allow",
+            "Action": [
+                "iam:CreateRole",
+                "iam:DeleteRole",
+                "iam:GetRole",
+                "iam:UpdateAssumeRolePolicy",
+                "iam:PutRolePolicy",
+                "iam:DeleteRolePolicy",
+                "iam:GetRolePolicy",
+                "iam:AttachRolePolicy",
+                "iam:DetachRolePolicy",
+                "iam:TagRole",
+                "iam:UntagRole",
+                "iam:ListRolePolicies",
+                "iam:ListAttachedRolePolicies",
+                "iam:CreatePolicy",
+                "iam:DeletePolicy",
+                "iam:CreatePolicyVersion",
+                "iam:DeletePolicyVersion"
+            ],
+            "Resource": [
+                "arn:aws:iam::*:role/LabAgent-*-ExecutionRole",
+                "arn:aws:iam::*:policy/LabAgent-*"
+            ]
+        },
+        {
+            "Sid": "IamUserManagementForStudentCredentials",
+            "Effect": "Allow",
+            "Action": [
+                "iam:CreateUser",
+                "iam:DeleteUser",
+                "iam:GetUser",
+                "iam:TagUser",
+                "iam:UntagUser",
+                "iam:PutUserPolicy",
+                "iam:DeleteUserPolicy",
+                "iam:GetUserPolicy",
+                "iam:ListUserPolicies",
+                "iam:AttachUserPolicy",
+                "iam:DetachUserPolicy",
+                "iam:ListAttachedUserPolicies",
+                "iam:CreateAccessKey",
+                "iam:DeleteAccessKey",
+                "iam:UpdateAccessKey",
+                "iam:ListAccessKeys",
+                "iam:CreateLoginProfile",
+                "iam:UpdateLoginProfile",
+                "iam:DeleteLoginProfile"
+            ],
+            "Resource": "arn:aws:iam::*:user/LabAgent-Team*"
+        },
+        {
+            "Sid": "IamSelfInspectionForInstructor",
+            "Effect": "Allow",
+            "Action": [
+                "iam:ListUserPolicies",
+                "iam:ListAttachedUserPolicies",
+                "iam:GetUserPolicy",
+                "iam:ListGroupsForUser"
+            ],
+            "Resource": "arn:aws:iam::*:user/instructor-01"
+        },
+        {
+            "Sid": "IamGroupSelfInspectionForInstructor",
+            "Effect": "Allow",
+            "Action": [
+                "iam:ListGroupPolicies",
+                "iam:GetGroupPolicy",
+                "iam:ListAttachedGroupPolicies"
+            ],
+            "Resource": "arn:aws:iam::*:group/*"
+        },
+        {
+            "Sid": "IamManagedPolicyReadOnlyForSelfInspection",
+            "Effect": "Allow",
+            "Action": [
+                "iam:GetPolicy",
+                "iam:GetPolicyVersion"
+            ],
+            "Resource": "arn:aws:iam::*:policy/*"
+        },
+        {
+            "Sid": "PassRoleOnlyToAgentCoreAndBedrock",
+            "Effect": "Allow",
+            "Action": "iam:PassRole",
+            "Resource": "arn:aws:iam::*:role/LabAgent-*-ExecutionRole",
+            "Condition": {
+                "StringEquals": {
+                    "iam:PassedToService": [
+                        "bedrock-agentcore.amazonaws.com",
+                        "bedrock.amazonaws.com"
+                    ]
+                }
+            }
+        },
+        {
+            "Sid": "AgentCoreServiceLinkedRoles",
+            "Effect": "Allow",
+            "Action": "iam:CreateServiceLinkedRole",
+            "Resource": [
+                "arn:aws:iam::*:role/aws-service-role/network.bedrock-agentcore.amazonaws.com/AWSServiceRoleForBedrockAgentCoreNetwork",
+                "arn:aws:iam::*:role/aws-service-role/runtime-identity.bedrock-agentcore.amazonaws.com/AWSServiceRoleForBedrockAgentCoreRuntimeIdentity",
+                "arn:aws:iam::*:role/aws-service-role/bedrock-agentcore.amazonaws.com/AWSServiceRoleForBedrockAgentCoreGatewayNetwork",
+                "arn:aws:iam::*:role/aws-service-role/identity-network.bedrock-agentcore.amazonaws.com/AWSServiceRoleForBedrockAgentCoreIdentity",
+                "arn:aws:iam::*:role/aws-service-role/runtime-instances.bedrock-agentcore.amazonaws.com/AWSServiceRoleForBedrockAgentCoreRuntimeInstances"
+            ],
+            "Condition": {
+                "StringEquals": {
+                    "iam:AWSServiceName": [
+                        "network.bedrock-agentcore.amazonaws.com",
+                        "runtime-identity.bedrock-agentcore.amazonaws.com",
+                        "bedrock-agentcore.amazonaws.com",
+                        "identity-network.bedrock-agentcore.amazonaws.com",
+                        "runtime-instances.bedrock-agentcore.amazonaws.com"
+                    ]
+                }
+            }
+        },
+        {
+            "Sid": "BedrockFullAccessForCourse",
+            "Effect": "Allow",
+            "Action": ["bedrock:*", "bedrock-mantle:*"],
+            "Resource": "*"
+        },
+        {
+            "Sid": "AgentCoreFullAccess",
+            "Effect": "Allow",
+            "Action": "bedrock-agentcore:*",
+            "Resource": "*"
+        },
+        {
+            "Sid": "LogsFullAccess",
+            "Effect": "Allow",
+            "Action": "logs:*",
+            "Resource": "*"
+        },
+        {
+            "Sid": "DenyOutsideUsWest2ForCloudShell",
+            "Effect": "Deny",
+            "Action": "cloudshell:*",
+            "Resource": "*",
+            "Condition": {
+                "StringNotEquals": {
+                    "aws:RequestedRegion": "us-west-2"
+                }
+            }
+        }
+    ]
+}
